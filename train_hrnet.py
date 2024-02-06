@@ -26,8 +26,8 @@ from utils.fh_utils import AverageMeter,EvalUtil, Frei2HO3D
 
 import VAEPose.vae_dex as vae_dex
 
-torch.cuda.set_device(1)
-os.environ['CUDA_VISIBLE_DEVICES'] ='1'
+torch.cuda.set_device(0)
+os.environ['CUDA_VISIBLE_DEVICES'] ='0'
 
 console = Console()
 test_log = {}
@@ -851,7 +851,7 @@ if __name__ == '__main__':
                 setattr(args, parse_key, parse_value)
     
     args = train_options.make_output_dir(args)
-    args.device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+    args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     args.ROOT = 9
     args.ROOT_NIMBLE = 11
     args.lambda_pose = args.lambda_pose_list[0]
@@ -898,7 +898,7 @@ if __name__ == '__main__':
     if args.force_init_lr > 0: # default is -1, means not using this
         optimizer.param_groups[0]['lr'] = args.force_init_lr
 
-    model = nn.DataParallel(model.to(args.device), device_ids=[1])
+    model = nn.DataParallel(model.to(args.device), device_ids=[0])
 
     loss_func = LossFunction()
     lpips_loss = lpips.LPIPS(net="alex").to(args.device)
