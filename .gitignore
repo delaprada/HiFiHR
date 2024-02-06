@@ -149,3 +149,4 @@ models/*
 *.ipynb
 *.png
 eval/
+*.txt

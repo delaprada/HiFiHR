@@ -5,8 +5,11 @@ import numpy as np
 from PIL import Image
 from torchvision import transforms as T
 
+from skimage import exposure 
+from skimage.exposure import match_histograms
+
 from FDA.utils import FDA_source_to_target_np
-from PASTA.utils import PASTA
+from PASTA.pasta import PASTA
 
 
 def get_color_params(brightness=0, contrast=0, saturation=0, hue=0):
@@ -64,17 +67,17 @@ def add_arm(img, idx):
         idx = idx % 32560
     img_id = "%08d" % (idx)
     
-    input_image = cv2.imread('/mnt/data/FreiHand/training/rgb/' + img_id + '.jpg')
+    input_image = cv2.imread('/root/autodl-tmp/freihand_real/training/rgb/' + img_id + '.jpg')
     input_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
 
     syn_image = np.array(img)
-    syn_mask = cv2.imread('/mnt/data/FreiHand_syn/segmentation/' + img_id + '.png', cv2.IMREAD_GRAYSCALE)
+    syn_mask = cv2.imread('/root/autodl-tmp/freihand/segmentation/' + img_id + '.png', cv2.IMREAD_GRAYSCALE)
     syn_mask = (syn_mask > 0).astype(np.uint8) * 255
 
     syn_hand = cv2.bitwise_and(syn_image, syn_image, mask=syn_mask)
 
-    hand_arm_mask = cv2.imread('/mnt/data/FreiHand_syn/hand_arm_mask/' + img_id + '.png', cv2.IMREAD_GRAYSCALE)
-    hand_mask = cv2.imread('/mnt/data/FreiHand_syn/hand_mask/' + img_id + '.png', cv2.IMREAD_GRAYSCALE)
+    hand_arm_mask = cv2.imread('/root/autodl-tmp/freihand/hand_arm_mask/' + img_id + '.png', cv2.IMREAD_GRAYSCALE)
+    hand_mask = cv2.imread('/root/autodl-tmp/freihand/hand_mask/' + img_id + '.png', cv2.IMREAD_GRAYSCALE)
     arm_mask = hand_arm_mask & ~hand_mask
 
     hand_with_arm = cv2.bitwise_and(input_image, input_image, mask=arm_mask)
@@ -96,7 +99,7 @@ def add_fourier(img):
     # img_id = str(random.randint(0, 3960 - 1)).rjust(8, '0')
 
     im_src = img
-    im_trg = Image.open("/mnt/data/FreiHand/training/rgb/" + img_id + ".jpg").convert('RGB')
+    im_trg = Image.open("/root/autodl-tmp/freihand_real/training/rgb/" + img_id + ".jpg").convert('RGB')
     # im_trg = Image.open("/home/zhuoran/data/evaluation/rgb/" + img_id + ".jpg").convert('RGB')
 
     im_src = np.asarray(im_src, np.float32)
@@ -116,16 +119,6 @@ def add_fourier(img):
     
     return src_in_trg
 
-# def add_pasta_fourier(img):
-#     alpha = 3.0
-#     beta = 0.25
-#     k = 2
-
-#     syn_transform = PASTA(alpha=alpha, beta=beta, k=k)    
-#     aug_img = syn_transform(img)
-
-#     return aug_img
-
 def add_pasta(img):
     alpha = 3.0
     beta = 0.25
@@ -143,14 +136,26 @@ def add_pasta(img):
     
     return aug_syn_img
 
+def hist_match(img):
+    # randomly choose reference image
+    img_id = str(random.randint(0, 32560 * 4 - 1)).rjust(8, '0')
+    ref_img = Image.open("/root/autodl-tmp/freihand_real/training/rgb/" + img_id + ".jpg").convert('RGB')
+    
+    img = np.array(img)
+    ref_img = np.array(ref_img)
+    
+    mat_img = match_histograms(img, ref_img)
+    
+    return mat_img
+
 def add_occ_obj(img, idx):
     if idx >= 32560:
         idx = idx % 32560
     img_id = "%08d" % (idx)
     
-    origin_img = cv2.imread("/mnt/data/FreiHand/training/rgb/" + img_id + ".jpg")
+    origin_img = cv2.imread("/root/autodl-tmp/freihand_real/training/rgb/" + img_id + ".jpg")
     origin_img = cv2.cvtColor(origin_img, cv2.COLOR_BGR2RGB)
-    final_mask = cv2.imread('/mnt/data/FreiHand_syn/final_mask/' + img_id + '.png', cv2.IMREAD_GRAYSCALE)
+    final_mask = cv2.imread('/root/autodl-tmp/freihand/final_mask/' + img_id + '.png', cv2.IMREAD_GRAYSCALE)
     final_mask = (final_mask > 0).astype(np.uint8) * 255
     mask_obj = cv2.bitwise_and(origin_img, origin_img, mask=final_mask)
     
